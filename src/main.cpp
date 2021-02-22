@@ -1,14 +1,12 @@
-#include <Arduino.h>
+#include <ctype.h>
 
-constexpr uint8_t LEFT_FORWARD_PIN { 5 };
-constexpr uint8_t LEFT_REVERSE_PIN { 6 };
-constexpr uint8_t RIGHT_FORWARD_PIN { 10 };
-constexpr uint8_t RIGHT_REVERSE_PIN { 9 };
+#include <avr_utils.h>
+#include <usart.h>
 
-void setup() {
-    Serial.begin(115200);
-    Serial.println("Vehicle ready for commands!");
-}
+constexpr uint8_t LEFT_FORWARD_PIN { PD5 };
+constexpr uint8_t LEFT_REVERSE_PIN { PD6 };
+constexpr uint8_t RIGHT_FORWARD_PIN { PB2 };
+constexpr uint8_t RIGHT_REVERSE_PIN { PB1 };
 
 inline uint8_t convert_command_to_num(char command) {
     if (isdigit(command)) {
@@ -42,22 +40,36 @@ inline void drive(uint8_t forward_pin, uint8_t reverse_pin, char command, uint8_
     const uint8_t num_command = convert_command_to_num(command);
     const uint8_t speed = calculate_speed(num_command, bias);
     if (num_command > 5) {
-        analogWrite(forward_pin, speed);
-        analogWrite(reverse_pin, 0);
+        avr::setPwmValue(forward_pin, speed);
+        avr::setPwmValue(reverse_pin, 0);
     } else {
-        analogWrite(forward_pin, 0);
-        analogWrite(reverse_pin, speed);
+        avr::setPwmValue(forward_pin, 0);
+        avr::setPwmValue(reverse_pin, speed);
     }
 }
 
-char command[] { '5', '5' };
+char command[] { '5', '5', '\0' };
 
-void loop() {
-    Serial.readBytes(command, 2);
+#pragma ide diagnostic ignored "EndlessLoop"
 
-    Serial.print("Got command: ");
-    Serial.println(command);
+int main() {
+    avr::initUsart(115200);
+    avr::printString("Vehicle ready for commands!\n");
+    avr::timer0::enable8bitPhaseCorrectPwmMode();
+    avr::timer0::enableOutputOnPD5andPD6();
+    avr::timer0::setPrescaleBy64();
+    avr::timer1::enable8bitPhaseCorrectPwmMode();
+    avr::timer1::enableOutputOnPB1andPB2();
+    avr::timer1::setPrescaleBy64();
 
-    drive(LEFT_FORWARD_PIN, LEFT_REVERSE_PIN, command[0], 20);
-    drive(RIGHT_FORWARD_PIN, RIGHT_REVERSE_PIN, command[1], 0);
+    while (true) {
+        avr::readString(command, 2);
+
+        avr::printString("Got command: ");
+        avr::printString(command);
+        avr::printString("\n");
+
+        drive(LEFT_FORWARD_PIN, LEFT_REVERSE_PIN, command[0], 0);
+        drive(RIGHT_FORWARD_PIN, RIGHT_REVERSE_PIN, command[1], 0);
+    }
 }
