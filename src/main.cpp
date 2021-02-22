@@ -1,3 +1,7 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-deprecated-headers"
+#pragma ide diagnostic ignored "EndlessLoop"
+
 #include <ctype.h>
 
 #include <avr_utils.h>
@@ -50,8 +54,6 @@ inline void drive(uint8_t forward_pin, uint8_t reverse_pin, char command, uint8_
 
 char command[] { '5', '5', '\0' };
 
-#pragma ide diagnostic ignored "EndlessLoop"
-
 int main() {
     avr::initUsart(115200);
     avr::printString("Vehicle ready for commands!\n");
@@ -73,3 +75,5 @@ int main() {
         drive(RIGHT_FORWARD_PIN, RIGHT_REVERSE_PIN, command[1], 0);
     }
 }
+
+#pragma clang diagnostic pop
