@@ -55,8 +55,8 @@ inline void drive(uint8_t forward_pin, uint8_t reverse_pin, char command, uint8_
 char command[] { '5', '5', '\0' };
 
 int main() {
-    avr::initUsart(115200);
-    avr::printString("Vehicle ready for commands!\n");
+    avr::usart::init(115200);
+    avr::usart::printString("Vehicle ready for commands!\n");
     avr::timer0::enable8bitPhaseCorrectPwmMode();
     avr::timer0::enableOutputOnPD5andPD6();
     avr::timer0::setPrescaleBy64();
@@ -65,11 +65,11 @@ int main() {
     avr::timer1::setPrescaleBy64();
 
     while (true) {
-        avr::readString(command, 2);
+        avr::usart::readString(command, 2);
 
-        avr::printString("Got command: ");
-        avr::printString(command);
-        avr::printString("\n");
+        avr::usart::printString("Got command: ");
+        avr::usart::printString(command);
+        avr::usart::printString("\n");
 
         drive(LEFT_FORWARD_PIN, LEFT_REVERSE_PIN, command[0], 0);
         drive(RIGHT_FORWARD_PIN, RIGHT_REVERSE_PIN, command[1], 0);
