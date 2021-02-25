@@ -2,57 +2,33 @@
 #pragma ide diagnostic ignored "modernize-deprecated-headers"
 #pragma ide diagnostic ignored "EndlessLoop"
 
-#include <ctype.h>
-
 #include <avr_utils.h>
 #include <usart.h>
+#include <stdio.h>
 
 constexpr uint8_t LEFT_FORWARD_PIN { PD5 };
 constexpr uint8_t LEFT_REVERSE_PIN { PD6 };
 constexpr uint8_t RIGHT_FORWARD_PIN { PB2 };
 constexpr uint8_t RIGHT_REVERSE_PIN { PB1 };
 
-inline uint8_t convert_command_to_num(char command) {
-    if (isdigit(command)) {
-        return command - '0';
-    } else {
-        return 5;
-    }
-}
-
-inline uint8_t calculate_speed(uint8_t command, uint8_t bias) {
-    switch (command) {
-        case 4:
-        case 6:
-            return 50 + bias;
-        case 3:
-        case 7:
-            return 60 + bias;
-        case 2:
-        case 8:
-            return 70 + bias;
-        case 1:
-        case 9:
-            return 80 + bias;
-        case 5:
-        default:
-            return 0;
-    }
-}
-
-inline void drive(uint8_t forward_pin, uint8_t reverse_pin, char command, uint8_t bias) {
-    const uint8_t num_command = convert_command_to_num(command);
-    const uint8_t speed = calculate_speed(num_command, bias);
-    if (num_command > 5) {
-        avr::setPwmValue(forward_pin, speed);
+inline void drive(uint8_t forward_pin, uint8_t reverse_pin, int8_t speed) {
+    if (speed >= 0) {
+        avr::setPwmValue(forward_pin, speed * 2);
         avr::setPwmValue(reverse_pin, 0);
     } else {
         avr::setPwmValue(forward_pin, 0);
-        avr::setPwmValue(reverse_pin, speed);
+        avr::setPwmValue(reverse_pin, (-speed) * 2);
     }
 }
 
-char command[] { '5', '5', '\0' };
+/*
+ * speed in range 1-255:
+ * 128 is stop.
+ * 127-1 is backwards.
+ * 129-255 is forwards
+ */
+uint8_t command[] { 128, 128 };
+char message_buffer[80];
 
 int main() {
     avr::usart::init(115200);
@@ -65,14 +41,22 @@ int main() {
     avr::timer1::setPrescaleBy64();
 
     while (true) {
-        avr::usart::readString(command, 2);
+        uint8_t bytes_read = avr::usart::readBytes(
+                command,
+                0,
+                2
+        );
+        if (bytes_read == 2) {
+            sprintf(message_buffer, "Got command: %i,%i\n", command[0], command[1]);
+            avr::usart::printString(message_buffer);
 
-        avr::usart::printString("Got command: ");
-        avr::usart::printString(command);
-        avr::usart::printString("\n");
-
-        drive(LEFT_FORWARD_PIN, LEFT_REVERSE_PIN, command[0], 0);
-        drive(RIGHT_FORWARD_PIN, RIGHT_REVERSE_PIN, command[1], 0);
+            int8_t left_speed { static_cast<int8_t>(command[0] + INT8_MIN) };
+            int8_t right_speed { static_cast<int8_t>(command[1] + INT8_MIN) };
+            sprintf(message_buffer, "Parsed speed: %i,%i\n", left_speed, right_speed);
+            avr::usart::printString(message_buffer);
+            drive(LEFT_FORWARD_PIN, LEFT_REVERSE_PIN, left_speed);
+            drive(RIGHT_FORWARD_PIN, RIGHT_REVERSE_PIN, right_speed);
+        }
     }
 }
 
