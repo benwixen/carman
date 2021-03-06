@@ -1,4 +1,4 @@
-#include <iostream>
+#include <vector>
 #include <unistd.h>
 
 #include "BluetoothSerialPort.h"
@@ -19,7 +19,7 @@ int main() {
     BluetoothSerialPort bt_port("/dev/cu.carman-DevB", 115200);
     PS4Controller ps4_controller;
 
-    uint8_t prev_command[] { 128, 128 };
+    std::vector<uint8_t> prev_command;
     while (true) {
         auto controller_state = ps4_controller.readControllerState();
         if (controller_state.has_value()) {
@@ -61,11 +61,11 @@ int main() {
 
             const auto left_motor_cmd = generateCommand(left_velocity);
             const auto right_motor_cmd = generateCommand(right_velocity);
-            const uint8_t command[] { left_motor_cmd, right_motor_cmd, 0 };
+            const std::vector<uint8_t> command { left_motor_cmd, right_motor_cmd, 0 };
 
-            if (command[0] != prev_command[0] || command[1] != prev_command[1]) {
-                bt_port.sendData(command, 3);
-                memcpy(prev_command, command, 2);
+            if (command != prev_command) {
+                bt_port.sendData(command);
+                prev_command = command;
                 printf("%i,%i\n", command[0], command[1]);
             }
         }

@@ -1,6 +1,8 @@
 #include "BluetoothSerialPort.h"
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 void listenToSerial(boost::asio::serial_port& port) {
     static boost::asio::streambuf read_buffer;
@@ -23,14 +25,14 @@ void listenToSerial(boost::asio::serial_port& port) {
     );
 }
 
-BluetoothSerialPort::BluetoothSerialPort(const char device[], int baud_rate) : port(io, device) {
+BluetoothSerialPort::BluetoothSerialPort(const std::string& device, int baud_rate) : port(io, device) {
     port.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
     listenToSerial(port);
     thread = std::thread([&]{ io.run(); });
 }
 
-void BluetoothSerialPort::sendData(const uint8_t data[], uint8_t size) {
-    boost::asio::write(port, boost::asio::buffer(data, size));
+void BluetoothSerialPort::sendData(const std::vector<uint8_t>& data) {
+    boost::asio::write(port, boost::asio::buffer(data));
 }
 
 BluetoothSerialPort::~BluetoothSerialPort() {

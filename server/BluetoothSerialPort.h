@@ -3,11 +3,13 @@
 
 #include <boost/asio.hpp>
 #include <iostream>
+#include <string>
+#include <vector>
 
 class BluetoothSerialPort {
 public:
-    BluetoothSerialPort(const char device[], int baud_rate);
-    void sendData(const uint8_t data[], uint8_t size);
+    BluetoothSerialPort(const std::string& device, int baud_rate);
+    void sendData(const std::vector<uint8_t>& data);
     ~BluetoothSerialPort();
 
 private:
