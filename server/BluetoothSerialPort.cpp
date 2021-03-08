@@ -17,7 +17,7 @@ void listenToSerial(boost::asio::serial_port& port) {
                         std::istream is(&read_buffer);
                         std::string line;
                         std::getline(is, line);
-                        std::cout << line << std::endl;
+                        std::cout << line << '\n';
                         listenToSerial(port);
                     }
                 }
