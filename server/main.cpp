@@ -4,15 +4,29 @@
 #include "BluetoothSerialPort.h"
 #include "PS4Controller.h"
 
-inline uint8_t generateCommand(int8_t velocity) {
-    uint8_t command = velocity + (-std::numeric_limits<int8_t>::min());
-    if (command == 0) {
-        return 1;
-    } else if (command > 108 && command < 148) {
-        return 128;
+constexpr uint8_t COMMAND_END_BYTE { 0 };
+constexpr uint8_t MAX_REVERSE_VELOCITY { 1 };
+constexpr uint8_t ZERO_VELOCITY { 128 };
+constexpr uint8_t MIN_REVERSE_VELOCITY { ZERO_VELOCITY - 20 };
+constexpr uint8_t MIN_FORWARD_VELOCITY { ZERO_VELOCITY + 20 };
+
+inline uint8_t encodeVelocity(int8_t velocity) {
+    uint8_t unsigned_velocity = velocity + (-std::numeric_limits<int8_t>::min());
+    if (unsigned_velocity == COMMAND_END_BYTE) {
+        return MAX_REVERSE_VELOCITY;
+    } else if (unsigned_velocity > MIN_REVERSE_VELOCITY && unsigned_velocity < MIN_FORWARD_VELOCITY) {
+        return ZERO_VELOCITY;
     } else {
-        return command;
+        return unsigned_velocity;
     }
+}
+
+inline std::vector<uint8_t> generateCommand(int8_t left_velocity, int8_t right_velocity) {
+    return std::vector<uint8_t> {
+        encodeVelocity(left_velocity),
+        encodeVelocity(right_velocity),
+        COMMAND_END_BYTE
+    };
 }
 
 int main() {
@@ -61,11 +75,7 @@ int main() {
             int8_t right_velocity {
                     static_cast<int8_t>(velocity * adjust_factor_right)
             };
-
-            const auto left_motor_cmd = generateCommand(left_velocity);
-            const auto right_motor_cmd = generateCommand(right_velocity);
-            const std::vector<uint8_t> command { left_motor_cmd, right_motor_cmd, 0 };
-
+            const auto command = generateCommand(left_velocity, right_velocity);
             if (command != prev_command) {
                 bt_port.sendData(command);
                 prev_command = command;
