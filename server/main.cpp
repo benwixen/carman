@@ -19,18 +19,21 @@ int main() {
     BluetoothSerialPort bt_port("/dev/cu.carman-DevB", 115200);
     PS4Controller ps4_controller;
 
+    const auto isOButtonPressed = [](std::optional<ControllerState> state) {
+        return state.has_value() && state->o_button_pressed;
+    };
+
     std::vector<uint8_t> prev_command;
-    while (true) {
-        auto controller_state = ps4_controller.readControllerState();
-        if (controller_state.has_value()) {
-            if (controller_state->o_button_pressed) {
-                break;
-            }
-            auto left_x = controller_state->left_stick_x;
-            auto left_y = controller_state->left_stick_y;
+    for (auto state = std::optional<ControllerState>();
+         !isOButtonPressed(state);
+         state = ps4_controller.readControllerState()) {
+
+        if (state.has_value()) {
+            auto left_x = state->left_stick_x;
+            auto left_y = state->left_stick_y;
             const uint8_t speed {
                     static_cast<uint8_t>(
-                            std::max(std::abs(controller_state->left_stick_x), std::abs(left_y))
+                            std::max(std::abs(state->left_stick_x), std::abs(left_y))
                     )
             };
             const int8_t velocity {

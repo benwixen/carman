@@ -6,9 +6,9 @@
 #include <hidapi.h>
 
 struct ControllerState {
-    const int8_t left_stick_x;
-    const int8_t left_stick_y;
-    const bool o_button_pressed;
+    int8_t left_stick_x;
+    int8_t left_stick_y;
+    bool o_button_pressed;
 };
 
 class PS4Controller {
