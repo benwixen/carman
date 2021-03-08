@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <unistd.h>
 
@@ -79,7 +80,7 @@ int main() {
             if (command != prev_command) {
                 bt_port.sendData(command);
                 prev_command = command;
-                printf("%i,%i\n", command.at(0), command.at(1));
+                std::cout << command.at(0) << ',' << command.at(1) << '\n';
             }
         }
         usleep(10'000);
